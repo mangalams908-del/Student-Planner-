@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "A college study task created by a student",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this task",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "description": "Title/name of the study task",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject or course name for the task",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the study task",
+          "enum": ["Pending", "Completed"]
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Optional deadline or target date label",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "integer",
+          "description": "Timestamp in milliseconds when task was created"
+        },
+        "completedAt": {
+          "type": "integer",
+          "description": "Timestamp in milliseconds when task was marked completed, or null if pending"
+        }
+      },
+      "required": ["userId", "title", "subject", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User personal study tasks secured by owner userId"
+    }
+  }
+}

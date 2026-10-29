@@ -1,0 +1,6 @@
+{
+  "name": "Student Planner Lite",
+  "description": "A simple, mobile-friendly study planner for college students to organize tasks by subject and track completion status.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

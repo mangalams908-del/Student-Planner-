@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTask(data) {
+      return data.userId is string &&
+        data.userId == request.auth.uid &&
+        data.title is string &&
+        data.title.size() >= 1 &&
+        data.title.size() <= 200 &&
+        data.subject is string &&
+        data.subject.size() >= 1 &&
+        data.subject.size() <= 100 &&
+        (data.status == 'Pending' || data.status == 'Completed') &&
+        (!('dueDate' in data) || (data.dueDate is string && data.dueDate.size() <= 100)) &&
+        data.createdAt is int &&
+        (!('completedAt' in data) || data.completedAt is int || data.completedAt == null);
+    }
+
+    // Tasks Collection: isolated by user UID
+    match /tasks/{taskId} {
+      // Direct document get
+      allow get: if isSignedIn() && isValidId(taskId) && resource.data.userId == request.auth.uid;
+
+      // Secure query listing: enforces resource.data.userId == request.auth.uid
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      // Create new study task
+      allow create: if isSignedIn() &&
+        isValidId(taskId) &&
+        isValidTask(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        incoming().keys().hasAll(['userId', 'title', 'subject', 'status', 'createdAt']) &&
+        incoming().keys().hasOnly(['userId', 'title', 'subject', 'status', 'dueDate', 'createdAt', 'completedAt']);
+
+      // Update study task: owner only, cannot change userId or createdAt
+      allow update: if isSignedIn() &&
+        isValidId(taskId) &&
+        isValidTask(incoming()) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'subject', 'status', 'dueDate', 'completedAt']);
+
+      // Delete study task: owner only
+      allow delete: if isSignedIn() &&
+        isValidId(taskId) &&
+        existing().userId == request.auth.uid;
+    }
+  }
+}
